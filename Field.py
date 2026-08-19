@@ -36,7 +36,6 @@ class Integer(Field):
 
 class Timestamp(Field):
     """Timestamp field with a default of now."""
-    def __init__(self, auto_now_add=False):
-        default_sql = " DEFAULT CURRENT_TIMESTAMP" if auto_now_add else ""
-        super().__init__(f"TIMESTAMP{default_sql}")
+    def __init__(self, unique=False, not_null=False, default='CURRENT_TIMESTAMP'):
+        super().__init__(f"TIMESTAMP", unique=unique, not_null=not_null, default=default)
 
