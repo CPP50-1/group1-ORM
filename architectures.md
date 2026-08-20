@@ -16,6 +16,7 @@ The name of the architecture doesn't matter much. Everything follows from two de
 **Q1 - Where do field values live?**
 On the Python instance (`self._values['name']`), or in a central cache indexed by
 `(model, id, field)`?
+Instance
 
 **Q2 - What does a query return?**
 Full Python objects (one instance = one row), or a lightweight object that only holds
@@ -119,7 +120,7 @@ toward B on day 3 if the group is moving fast: the cache is already there, all t
 left is making prefetch automatic.
 
 **Risk: low to medium.**
-
+D
 ---
 
 ## 3. Comparison
@@ -145,9 +146,11 @@ and written down.
    `filter(city='Liege')`, or expression objects (operator overloading on fields,
    `Customer.city == 'Liege'`). The spec requires the domain; the third option is an
    excellent stretch goal if everything else is green.
+1st
 2. **Where SQL is generated.** Each field produces its own SQL, or a central
    `SqlBuilder` where fields only expose `sql_type`. The central builder is strongly
    recommended: one place to secure against injection, one place to review.
+Ok
 3. **The query counter is a foundation, not a finishing touch.** §5.6 requires
    *measuring*. A cursor wrapper that increments a counter and logs SQL costs fifteen
    lines on day 1 and makes everything else observable. Written on day 4, it forces
@@ -159,6 +162,7 @@ and written down.
    `__eq__` **and** `__hash__` on `(model, id)` - otherwise records can't be used in a
    `set` or as dict keys, and the prefetch cache breaks. (This is exactly the day-1
    exercise from the OOP module, applied for real.)
+ok
 
 ---
 
@@ -182,10 +186,23 @@ justifying it in review.
 A written **architecture decision**, versioned in the repo (`ADR.md`):
 
 - direction chosen (A / B / C / D or an explicit hybrid) and the reason in three lines;
+
+D, close to Odoo but implementation is better for the time allocated. If we move fast we'll switch to B
+
 - answers to the five cross-cutting decisions in §4;
+
+1st idea for every one
+
 - what the group is knowingly giving up (e.g. "no identity map, we accept that two
   `browse` calls give two objects - we document the limitation");
+
+  
+
 - the exact signature of the five public verbs.
+
+(`create` / `write` / `search` /
+`unlink` / `browse`)
+
 
 This document is revisited as-is in the final code review: the question won't be "was
 this the right architecture?" but "did you hold to yours, and can you say what it cost
