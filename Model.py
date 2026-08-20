@@ -1,5 +1,6 @@
 import psycopg2
 from psycopg2 import errors
+from psycopg2.extensions import adapt
 
 from Field import Field
 
@@ -72,7 +73,10 @@ class Model(metaclass=ModelMeta):
         # not user input.
 
         # 2. Introspect the class: Loop through the attributes the developer wrote
-        for attr_name, field_obj in cls.__dict__.items():
+        
+        # iterating over cls.__dict__ only finds fields declared directly on the current class
+        # but miss fields inherited from a parent model, so we need to iterate on the fields
+        for attr_name, field_obj in cls.fields.items():
             # Only process attributes that are our ORM Fields
             if isinstance(field_obj, Field):
                 # Build the SQL string for this specific column
@@ -84,7 +88,13 @@ class Model(metaclass=ModelMeta):
                 if field_obj.not_null:
                     col_def += " NOT NULL"
                 if field_obj.default is not None:
-                    col_def += f" DEFAULT {field_obj.default}"
+                    if field_obj.default == "CURRENT_TIMESTAMP":
+                        col_def += " DEFAULT CURRENT_TIMESTAMP"
+                    else:
+                        # safely quote literal defaults
+                        # the default must come only from trusted model definitions
+                        quoted_default = adapt(field_obj.default).getquoted().decode()
+                        col_def += f" DEFAULT {quoted_default}"
 
                 columns.append(col_def)
 
