@@ -1,5 +1,9 @@
 # group1-ORM
 
+**Lightweight ORM exercise for CPP50**
+
+---
+
 ## Local database
 
 Copy `.env.example` to `.env` and replace the example password with a local value:
@@ -79,10 +83,6 @@ GitHub Actions does not automatically pass repository secrets into Docker Compos
 Use `${{ secrets.NAME }}` only in workflow files. For pull requests from forks, GitHub does not provide repository secrets, so steps requiring these secrets should be skipped or use a separate non-secret test database configuration.
 
 ---
-
-# ORMMM
-
-**Lightweight ORM exercise for CPP50**
 
 *Internal Engineering Spec*
 
