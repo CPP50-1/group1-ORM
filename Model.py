@@ -71,7 +71,8 @@ class Model(metaclass=ModelMeta):
         tables = []
         for table_name in registry.keys():
             tables.append(table_name)
-        sql = f"DROP TABLE {", ".join(tables)}"
+        sql = f"DROP TABLE IF EXISTS {", ".join(tables)}"
+        #todo
         # 4. Execute the query
         # We do not suppress errors, we want the caller to be able to detect that table creation failed
         # Because we use CREATE TABLE, we can catch DuplicateTable errors from PostgreSQL
@@ -159,3 +160,15 @@ class Model(metaclass=ModelMeta):
         except psycopg2.DatabaseError:
             conn.rollback()
             raise
+
+
+    def create(self):
+        pass #insert
+    def write(self):
+        pass #update
+    def search(self):
+        pass # select like
+    def unlink(self):
+        pass #delete
+    def browse(self):
+        pass # select
