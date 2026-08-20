@@ -1,5 +1,6 @@
-import os
 import psycopg2
+from psycopg2 import errors
+
 from Field import Field
 
 registry = {}
@@ -36,6 +37,7 @@ class ModelMeta(type):
 
         attrs['_table'] = table_name
 
+        # check for duplicate model registrations
         if table_name in registry:
             raise TableAlreadyExistsError(
                 f"Model for table '{table_name}' is already registered"
@@ -63,7 +65,11 @@ class Model(metaclass=ModelMeta):
         table_name = cls._table
 
         columns = []
-        values = []
+
+        # We avoid using parameterized values for schema definitions, 
+        # to avoid treating default values like CURRENT_TIMESTAMP as string literals
+        # This is safe because we only use trusted values from the Field definitions, 
+        # not user input.
 
         # 2. Introspect the class: Loop through the attributes the developer wrote
         for attr_name, field_obj in cls.__dict__.items():
@@ -78,23 +84,30 @@ class Model(metaclass=ModelMeta):
                 if field_obj.not_null:
                     col_def += " NOT NULL"
                 if field_obj.default is not None:
-                    values.append(field_obj.default)
-                    col_def += " DEFAULT %s"
+                    col_def += f" DEFAULT {field_obj.default}"
 
                 columns.append(col_def)
 
         # 3. Assemble the final CREATE TABLE query
         columns_sql = ",\n    ".join(columns)
-        sql = f"CREATE TABLE IF NOT EXISTS {table_name} (\n    {columns_sql}\n);"
+        sql = f"""CREATE TABLE {table_name} (
+            {columns_sql}
+        )"""
 
         print(f"\n--- Generated SQL for {cls.__name__} ---\n{sql}\n-----------------------------")
 
         # 4. Execute the query
-        with conn.cursor() as curs:
-            try:
-                curs.execute(sql, values)
-                conn.commit()
-                print(f"Table '{table_name}' successfully verified/created!")
-            except (Exception, psycopg2.DatabaseError) as error:
-                print(f"Error creating table '{table_name}': {error}")
-                conn.rollback()
+        # We do not suppress errors, we want the caller to be able to detect that table creation failed
+        # Because we use CREATE TABLE, we can catch DuplicateTable errors from PostgreSQL
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+            conn.commit()
+        except errors.DuplicateTable as error:
+            conn.rollback()
+            raise TableAlreadyExistsError(
+                f"Database table '{table_name}' already exists"
+            ) from error
+        except psycopg2.DatabaseError:
+            conn.rollback()
+            raise
