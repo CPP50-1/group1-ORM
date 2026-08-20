@@ -73,7 +73,6 @@ class Adapter:
         Called once per test session. Must leave the schema in a usable state.
         """
         # declare 3 models
-
         Connection.initialise()
 
         class Order(Model):
@@ -88,11 +87,12 @@ class Adapter:
             city = Char()
             vip = Boolean()
 
+        Model.delete_tables_from_registry(self._db)
         Model.create_tables_from_registry(self._db)
 
     def teardown(self):
         """Drop the tables / close the connection. Called once at the end."""
-        #drop tables here (Model.drop_tables())
+        Model.delete_tables_from_registry(self._db)
         Connection.close_pool()
 
     def reset_data(self):
@@ -101,7 +101,7 @@ class Adapter:
         Also clear any in-memory cache / identity map / session your
         architecture keeps, otherwise tests will leak into each other.
         """
-        raise NotImplementedError
+        Model.reset_tables_from_registry(self._db)
 
     # ------------------------------------------------------------------
     # Introspection

@@ -98,20 +98,20 @@ class Connection:
             with conn.cursor() as cur:
                 yield cur
 
-    @classmethod
-    def test_db(cls):
-        sql = """
-CREATE TABLE IF NOT EXISTS test (id Serial PRIMARY KEY, name VARCHAR(255))
-"""
-        with cls._instance.get_cursor() as cur:
-            cur.execute(sql)
-
-    @classmethod
-    def end_test_db(cls):
-        sql = """
-              DROP TABLE IF EXISTS test
-              """
-        with cls._instance.get_cursor() as cur:
-            cur.execute(sql)
+#     @classmethod
+#     def test_db(cls):
+#         sql = """
+# CREATE TABLE IF NOT EXISTS test (id Serial PRIMARY KEY, name VARCHAR(255))
+# """
+#         with cls._instance.get_cursor() as cur:
+#             cur.execute(sql)
+#
+#     @classmethod
+#     def end_test_db(cls):
+#         sql = """
+#               DROP TABLE IF EXISTS test
+#               """
+#         with cls._instance.get_cursor() as cur:
+#             cur.execute(sql)
 
 

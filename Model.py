@@ -67,9 +67,44 @@ class Model(metaclass=ModelMeta):
             created_class.create_table(conn)
 
     @classmethod
+    def delete_tables_from_registry(cls, conn):
+        tables = []
+        for table_name in registry.keys():
+            tables.append(table_name)
+        sql = f"DROP TABLE {", ".join(tables)}"
+        # 4. Execute the query
+        # We do not suppress errors, we want the caller to be able to detect that table creation failed
+        # Because we use CREATE TABLE, we can catch DuplicateTable errors from PostgreSQL
+        try:
+            with conn.get_cursor() as cursor:
+                cursor.execute(sql)
+        except psycopg2.DatabaseError:
+            conn.rollback()
+            raise
+
+    @classmethod
+    def reset_tables_from_registry(cls, conn):
+        tables = []
+        for table_name in registry.keys():
+            tables.append(table_name)
+        sql = f"TRUNCATE TABLE {", ".join(tables)} RESTART IDENTITY CASCADE"
+
+
+        # 4. Execute the query
+        # We do not suppress errors, we want the caller to be able to detect that table creation failed
+        # Because we use CREATE TABLE, we can catch DuplicateTable errors from PostgreSQL
+        try:
+            with conn.get_cursor() as cursor:
+                cursor.execute(sql)
+        except psycopg2.DatabaseError:
+            conn.rollback()
+            raise
+
+
+    @classmethod
     def create_table(cls, conn):
         table_name = cls._table
-        print(conn)
+
         columns = []
 
         # We avoid using parameterized values for schema definitions, 
@@ -105,7 +140,7 @@ class Model(metaclass=ModelMeta):
 
         # 3. Assemble the final CREATE TABLE query
         columns_sql = ",\n    ".join(columns)
-        sql = f"""CREATE TABLE if not exists {table_name} (
+        sql = f"""CREATE TABLE {table_name} (
             {columns_sql}
         )"""
         #todo manage tables
