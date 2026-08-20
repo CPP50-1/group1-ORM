@@ -56,23 +56,44 @@ Two conventions the suite relies on:
 
 from contextlib import contextmanager
 from types import SimpleNamespace
+from Field import *
+import Model
+from Connection import Connection
+from Model import Model
 
 
 class Adapter:
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
-
+    _db = Connection.get_instance()
     def setup(self):
         """Connect to PostgreSQL, declare the three models, create the tables.
 
         Called once per test session. Must leave the schema in a usable state.
         """
-        raise NotImplementedError
+        # declare 3 models
+
+        Connection.initialise()
+
+        class Order(Model):
+            reference = Char()
+            amount = Integer()
+
+        class Tag(Model):
+            name = Char()
+
+        class Customer(Model):
+            name = Char()
+            city = Char()
+            vip = Boolean()
+
+        Model.create_tables_from_registry(self._db)
 
     def teardown(self):
         """Drop the tables / close the connection. Called once at the end."""
-        raise NotImplementedError
+        #drop tables here (Model.drop_tables())
+        Connection.close_pool()
 
     def reset_data(self):
         """Empty all rows (TRUNCATE ... RESTART IDENTITY CASCADE) between tests.

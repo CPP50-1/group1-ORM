@@ -54,7 +54,7 @@ class ModelMeta(type):
 
 class Model(metaclass=ModelMeta):
     """Base class that developers will inherit from."""
-
+    _table = ''
     def __init__(self, **kwargs):
         # Allow instantiation like User(name="Alice", age=30)
         for key, value in kwargs.items():
@@ -62,9 +62,14 @@ class Model(metaclass=ModelMeta):
                 setattr(self, key, value)
 
     @classmethod
+    def create_tables_from_registry(cls, conn):
+        for created_class in registry.values():
+            created_class.create_table(conn)
+
+    @classmethod
     def create_table(cls, conn):
         table_name = cls._table
-
+        print(conn)
         columns = []
 
         # We avoid using parameterized values for schema definitions, 
@@ -100,9 +105,10 @@ class Model(metaclass=ModelMeta):
 
         # 3. Assemble the final CREATE TABLE query
         columns_sql = ",\n    ".join(columns)
-        sql = f"""CREATE TABLE {table_name} (
+        sql = f"""CREATE TABLE if not exists {table_name} (
             {columns_sql}
         )"""
+        #todo manage tables
 
         print(f"\n--- Generated SQL for {cls.__name__} ---\n{sql}\n-----------------------------")
 
@@ -110,14 +116,11 @@ class Model(metaclass=ModelMeta):
         # We do not suppress errors, we want the caller to be able to detect that table creation failed
         # Because we use CREATE TABLE, we can catch DuplicateTable errors from PostgreSQL
         try:
-            with conn.cursor() as cursor:
+            with conn.get_cursor() as cursor:
                 cursor.execute(sql)
-            conn.commit()
         except errors.DuplicateTable as error:
             conn.rollback()
-            raise TableAlreadyExistsError(
-                f"Database table '{table_name}' already exists"
-            ) from error
+            print(f"Database table '{table_name}' already exists")
         except psycopg2.DatabaseError:
             conn.rollback()
             raise
