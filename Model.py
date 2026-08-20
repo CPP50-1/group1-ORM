@@ -4,6 +4,10 @@ from Field import Field
 
 registry = {}
 
+
+class TableAlreadyExistsError(Exception):
+    pass
+
 class ModelMeta(type):
     """Metaclass to collect fields and register models."""
     def __new__(mcs, name, bases, attrs):
@@ -13,6 +17,7 @@ class ModelMeta(type):
 
         # 1. Collect all Field instances declared on the class
         _fields = {}
+
         for key, value in attrs.items():
             if isinstance(value, Field):
                 _fields[key] = value
@@ -20,9 +25,21 @@ class ModelMeta(type):
         # Save the collected fields back to the class attributes for easy access later
         attrs['_fields'] = _fields
 
-        # 2. Derive the table name (default to lowercase class name if not provided)
-        table_name = attrs.get('_table', name.lower())
+        # Handle table name: either use the explicitely provided _table attribute, e.g people
+        # or derive it from the class name (lower case and pluralized)
+        if "_table" in attrs:
+            table_name = attrs["_table"]
+        else:
+            table_name = name.lower()
+            if not table_name.endswith("s"):
+                table_name += "s"
+
         attrs['_table'] = table_name
+
+        if table_name in registry:
+            raise TableAlreadyExistsError(
+                f"Model for table '{table_name}' is already registered"
+            )
 
         # Create the actual class
         new_class = super().__new__(mcs, name, bases, attrs)
@@ -43,10 +60,7 @@ class Model(metaclass=ModelMeta):
 
     @classmethod
     def create_table(cls, conn):
-        # 1. Determine table name (lowercase class name + 's' is standard convention)
-        table_name = cls.__name__.lower() + "s"
-        if table_name in registry:
-            raise Exception(f"Table '{table_name}' already exists!")
+        table_name = cls._table
 
         columns = []
         values = []
