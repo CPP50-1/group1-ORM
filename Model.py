@@ -76,7 +76,7 @@ class Model(metaclass=ModelMeta):
         
         # iterating over cls.__dict__ only finds fields declared directly on the current class
         # but miss fields inherited from a parent model, so we need to iterate on the fields
-        for attr_name, field_obj in cls.fields.items():
+        for attr_name, field_obj in cls._fields.items():
             # Only process attributes that are our ORM Fields
             if isinstance(field_obj, Field):
                 # Build the SQL string for this specific column
